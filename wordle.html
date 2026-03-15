@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORD GUESS</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05050f;font-family:'Press Start 2P',monospace;color:#d0d0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;background:#0d0d1a;border-bottom:2px solid #1a1a35}
+nav a{color:#00ffff;text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav h1{font-size:.7rem;color:#fff;margin:0 auto;padding-right:4rem}
+.game{display:flex;flex-direction:column;align-items:center;padding:1.5rem;gap:1.2rem;max-width:500px;width:100%}
+.stats{display:flex;gap:2rem;background:#0d0d1a;border:2px solid #1a1a35;padding:.8rem 1.5rem;border-radius:4px}
+.st{text-align:center}.st-l{font-size:.35rem;color:#44446a;margin-bottom:.3rem}.st-v{font-size:.9rem}
+.grid{display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:6px}
+.tile{width:56px;height:56px;border:2px solid #1a1a35;background:#0a0a18;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:bold;transition:background .2s,transform .1s;border-radius:3px}
+.tile.filled{border-color:#44446a;animation:pop .1s ease}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.tile.correct{background:#1a5a1a;border-color:#00ff88;color:#00ff88;box-shadow:0 0 8px rgba(0,255,136,.3)}
+.tile.present{background:#5a5a00;border-color:#ffee00;color:#ffee00;box-shadow:0 0 8px rgba(255,238,0,.3)}
+.tile.absent{background:#1a1a1a;border-color:#333;color:#444}
+.tile.shake{animation:tile-shake .4s ease}
+@keyframes tile-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.keyboard{display:flex;flex-direction:column;gap:5px;align-items:center}
+.kb-row{display:flex;gap:4px}
+.kb-key{background:#1a1a35;border:none;color:#d0d0ff;font-family:'Press Start 2P',monospace;font-size:.45rem;height:44px;min-width:32px;padding:0 4px;cursor:pointer;border-radius:4px;transition:.2s;display:flex;align-items:center;justify-content:center}
+.kb-key:hover{background:#2a2a45}
+.kb-key.wide{min-width:52px;font-size:.35rem}
+.kb-key.correct{background:#1a5a1a;color:#00ff88}
+.kb-key.present{background:#5a5a00;color:#ffee00}
+.kb-key.absent{background:#111;color:#333}
+.msg{font-size:.5rem;text-align:center;min-height:2rem;display:flex;align-items:center;justify-content:center}
+.msg-win{color:#00ff88;text-shadow:0 0 10px #00ff88}
+.msg-lose{color:#ff3355}
+.msg-info{color:#ffee00}
+.btn{background:transparent;border:2px solid #00ffff;color:#00ffff;font-family:'Press Start 2P',monospace;font-size:.45rem;padding:.6rem 1.5rem;cursor:pointer;transition:.2s;border-radius:2px;letter-spacing:.08em}
+.btn:hover{background:#00ffff;color:#000;box-shadow:0 0 12px #00ffff}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>🔤 WORD GUESS</h1>
+</nav>
+<div class="game">
+  <div class="stats">
+    <div class="st"><div class="st-l">PLAYED</div><div class="st-v" id="played" style="color:#fff">0</div></div>
+    <div class="st"><div class="st-l">WIN %</div><div class="st-v" id="winpct" style="color:#00ff88">0</div></div>
+    <div class="st"><div class="st-l">STREAK</div><div class="st-v" id="streak" style="color:#ffee00">0</div></div>
+    <div class="st"><div class="st-l">BEST</div><div class="st-v" id="bestStreak" style="color:#ff00cc">0</div></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="msg" id="msg"></div>
+  <div class="keyboard" id="keyboard"></div>
+  <button class="btn" id="newBtn" onclick="newGame()" style="display:none">▶ NEXT WORD</button>
+</div>
+<script>
+const WORDS=['ABOUT','ABOVE','ABUSE','ACTOR','ACUTE','ADMIT','ADOPT','ADULT','AFTER','AGAIN','AGENT','AGREE','AHEAD','ALARM','ALBUM','ALERT','ALIKE','ALIGN','ALIVE','ALLEY','ALLOW','ALONE','ALONG','ALOUD','ALPHA','ANGEL','ANGRY','ANIME','ANKLE','APART','APPLE','APPLY','APRON','ARGUE','ARISE','ARMOR','AROMA','AROSE','ARRAY','ASIDE','ASSET','ATOMS','AUDIO','AUDIT','AVOID','AWARE','AWFUL','BASIC','BASIS','BATCH','BEACH','BEARD','BEAST','BEGIN','BEING','BELOW','BENCH','BERRY','BIRTH','BLACK','BLADE','BLAME','BLAND','BLAST','BLAZE','BLEED','BLEND','BLESS','BLIND','BLOCK','BLOOD','BLOOM','BLOWN','BLUES','BLUNT','BOARD','BOOST','BOUND','BRAIN','BRAND','BRAVE','BREAD','BREAK','BREED','BRIBE','BRICK','BRIEF','BRING','BROAD','BROKE','BROOK','BROWN','BRUSH','BRUTE','BUILD','BUILT','BURST','CABIN','CABLE','CANDY','CARRY','CATCH','CAUSE','CHAIN','CHAIR','CHAOS','CHARM','CHART','CHASE','CHEAP','CHECK','CHEST','CHILD','CHILL','CHINA','CHORD','CIVIC','CIVIL','CLAIM','CLASH','CLASS','CLEAN','CLEAR','CLERK','CLICK','CLIMB','CLING','CLOCK','CLONE','CLOSE','CLOTH','CLOUD','CLOWN','COACH','COAST','COLOR','COMES','COMIC','CORAL','COUCH','COUNT','COURT','COVER','CRACK','CRAFT','CRANE','CRASH','CRAZY','CREAM','CRIME','CROSS','CROWD','CROWN','CRUSH','CURVE','CYCLE','DAILY','DANCE','DATED','DEATH','DEBUT','DECOR','DELAY','DEPOT','DERBY','DEVIL','DIRTY','DISCO','DISCO','DODGE','DONOR','DOUBT','DOUGH','DRAFT','DRAIN','DRAMA','DRANK','DRAWN','DREAM','DRESS','DRIFT','DRILL','DRINK','DRIVE','DROVE','DRUMS','DRYER','EIGHT','ELECT','ELITE','EMAIL','ENTER','ENTRY','EQUAL','EVADE','EVENT','EVERY','EXACT','EXIST','EXTRA','FAINT','FAITH','FANCY','FATAL','FEAST','FIELD','FIFTH','FIGHT','FINAL','FLAME','FLASH','FLEET','FLESH','FLICK','FLIES','FLOAT','FLOOD','FLOOR','FLOUR','FLOWN','FLUID','FLUTE','FOCAL','FOGGY','FORCE','FORGE','FORUM','FOUND','FRAME','FRANK','FRAUD','FRONT','FROST','FROZE','FRUIT','FUNNY','GAUGE','GHOST','GIANT','GIRLS','GIVEN','GLASS','GLIDE','GLOAT','GLOBE','GLOOM','GLUED','GOING','GRACE','GRADE','GRAIL','GRAIN','GRAND','GRANT','GRAPH','GRASP','GRASS','GRAZE','GREED','GRIEF','GRILL','GRIND','GROAN','GROSS','GROUP','GROVE','GROWN','GRUNT','GUARD','GUIDE','GUILD','GUISE','HABIT','HEART','HEAVY','HEDGE','HENCE','HINGE','HOIST','HONOR','HORSE','HOTEL','HOTLY','HOUSE','HUMAN','HURRY','IDEAL','IMAGE','IMPLY','INDEX','INNER','INPUT','INTER','IVORY','JAPAN','JEWEL','JOKER','JUDGE','JUICE','LARGE','LASER','LATER','LAUGH','LAYER','LEARN','LEASE','LEAVE','LIGHT','LIMIT','LOCAL','LODGE','LOGIC','LOOSE','LOVER','LOWER','LUCKY','LUNAR','MAGIC','MAJOR','MANOR','MATCH','MEDIA','MERIT','METAL','METRO','MIGHT','MINOR','MINUS','MOIST','MONEY','MONKS','MONTH','MORAL','MOUNT','MOUSE','MOUTH','MOVIE','MUGGY','MUSIC','NAIVE','NASTY','NERVE','NEVER','NIGHT','NOBLE','NOISE','NORTH','NOTED','NOVEL','NURSE','NYMPH','OCEAN','ONSET','ORBIT','ORDER','OTHER','OUTER','OWNED','OWNER','OZONE','PAINT','PANDA','PANIC','PAPER','PATCH','PAUSE','PEACE','PEARL','PENNY','PESKY','PHASE','PHONE','PHOTO','PIANO','PILOT','PITCH','PLACE','PLAIN','PLANE','PLANT','PLATE','PLAZA','PLEAD','PLUCK','PLUMB','PLUME','POINT','POLAR','PORCH','POWER','PRESS','PRICE','PRIDE','PRIME','PRINT','PRIOR','PRIZE','PROBE','PRONE','PROOF','PROSE','PROVE','PROWL','PULSE','PUNCH','QUEUE','QUILT','QUOTA','QUOTE','RADAR','RADIO','RAISE','RALLY','RANGE','RAPID','RAVEN','REACH','REBEL','REFER','REIGN','RELAX','RELAY','RELIC','REPLY','RIDER','RIDGE','RIFLE','LIGHT','RISKY','RIVER','ROAST','ROCKY','ROMAN','ROYAL','RULER','RURAL','SAINT','SAUCE','SCALE','SCARE','SCENE','SCORE','SCOUT','SEIZE','SENSE','SERVE','SETUP','SEVEN','SHAME','SHAPE','SHARE','SHARK','SHARP','SHIFT','SHINE','SHIRT','SHOCK','SHORE','SHORT','SHOUT','SIGHT','SIGMA','SINCE','SIXTH','SKILL','SLAVE','SLEEP','SLEEK','SLICE','SLOPE','SMALL','SMART','SMELL','SMILE','SMOKE','SNEAK','SOLAR','SOLVE','SORRY','SOUND','SPACE','SPARE','SPARK','SPEAK','SPELL','SPEND','SPICE','SPIKE','SPINE','SPITE','SPLIT','SPOKE','SPOOK','SPORT','SPRAY','SQUAD','STACK','STAGE','STAKE','STALE','STAND','STARK','START','STATE','STAYS','STEAM','STEEL','STEER','STERN','STOCK','STONE','STOOD','STORM','STORY','STRAP','STRAW','STRAY','STRIP','STUCK','STUDY','STYLE','SUGAR','SUITE','SUPER','SURGE','SWAMP','SWEAR','SWEAT','SWEET','SWEEP','SWIFT','SWING','SWORD','SWORN','SWUNG','TAKEN','TENSE','TERSE','THEFT','THEIR','THEME','THERE','THICK','THING','THINK','THIRD','THOSE','THREE','THREW','THROW','TIGER','TIGHT','TIMER','TIRED','TITLE','TODAY','TOKEN','TOTAL','TOUCH','TOUGH','TOWEL','TOWER','TOXIC','TRACE','TRACK','TRADE','TRAIL','TRAIN','TRAIT','TRAWL','TRIAL','TRIBE','TRICK','TRIED','TROOP','TROVE','TRUCE','TRUCK','TRULY','TRUNK','TRUST','TRUTH','TULIP','TUMOR','TUNER','TWICE','TWIST','ULTRA','UNCLE','UNDER','UNION','UNITY','UNTIL','UPPER','UPSET','USHER','USUAL','UTTER','VALID','VALUE','VALVE','VAPOR','VAULT','VENOM','VIDEO','VIGOR','VIRAL','VIRUS','VISIT','VAGUE','VIVID','VOCAL','VOICE','VOTER','VITAL','WAGER','WASTE','WATCH','WATER','WEARY','WEAVE','WEDGE','WEIGH','WORLD','WORSE','WORST','WORTH','WOULD','WOUND','WRATH','WRITE','WROTE','YACHT','YEARN','YIELD','YOUTH','ZEBRA','ZONED','ZONES'];
+const valid=new Set(WORDS);
+let answer,guesses,current,gameOver,stats={played:0,wins:0,streak:0,best:0};
+const ROWS=6,COLS=5;
+function newGame(){
+  answer=WORDS[Math.floor(Math.random()*WORDS.length)];
+  guesses=[];current='';gameOver=false;
+  document.getElementById('msg').textContent='';document.getElementById('msg').className='msg';
+  document.getElementById('newBtn').style.display='none';
+  buildGrid();buildKeyboard();
+}
+function buildGrid(){
+  document.getElementById('grid').innerHTML=Array.from({length:ROWS},(_,r)=>`<div class="row">${Array.from({length:COLS},(_,c)=>`<div class="tile" id="t${r}-${c}"></div>`).join('')}</div>`).join('');
+}
+function buildKeyboard(){
+  const rows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']];
+  document.getElementById('keyboard').innerHTML=rows.map(row=>`<div class="kb-row">${row.map(k=>`<button class="kb-key${['ENTER','⌫'].includes(k)?' wide':''}" id="kb-${k}" onclick="keyPress('${k}')">${k}</button>`).join('')}</div>`).join('');
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter')keyPress('ENTER');
+  else if(e.key==='Backspace')keyPress('⌫');
+  else if(/^[a-zA-Z]$/.test(e.key))keyPress(e.key.toUpperCase());
+});
+function keyPress(k){
+  if(gameOver)return;
+  if(k==='⌫'){current=current.slice(0,-1);}
+  else if(k==='ENTER'){submitGuess();}
+  else if(current.length<COLS&&/^[A-Z]$/.test(k)){current+=k;}
+  updateCurrentRow();
+}
+function updateCurrentRow(){
+  const row=guesses.length;
+  for(let c=0;c<COLS;c++){const t=document.getElementById(`t${row}-${c}`);t.textContent=current[c]||'';t.className='tile'+(current[c]?' filled':'');}
+}
+function submitGuess(){
+  if(current.length<COLS){shakeRow(guesses.length);showMsg('NOT ENOUGH LETTERS','info');return;}
+  if(!valid.has(current)){shakeRow(guesses.length);showMsg('NOT IN WORD LIST','info');return;}
+  const result=evaluate(current,answer);
+  guesses.push({word:current,result});
+  revealRow(guesses.length-1,result);
+  updateKeyboard(current,result);
+  current='';
+  if(current===''){}
+  const won=result.every(r=>r==='correct');
+  if(won){gameOver=true;stats.played++;stats.wins++;stats.streak++;stats.best=Math.max(stats.best,stats.streak);setTimeout(()=>{showMsg(['GENIUS!','MAGNIFICENT!','IMPRESSIVE!','SPLENDID!','GREAT!','PHEW!'][guesses.length-1]||'NICE!','win');document.getElementById('newBtn').style.display='block';updateStats();},1800);}
+  else if(guesses.length>=ROWS){gameOver=true;stats.played++;stats.streak=0;setTimeout(()=>{showMsg('ANSWER: '+answer,'lose');document.getElementById('newBtn').style.display='block';updateStats();},1800);}
+}
+function evaluate(guess,ans){
+  const result=Array(COLS).fill('absent');const ansArr=[...ans];const guessArr=[...guess];
+  // First pass: correct
+  for(let i=0;i<COLS;i++){if(guessArr[i]===ansArr[i]){result[i]='correct';ansArr[i]=null;guessArr[i]=null;}}
+  // Second pass: present
+  for(let i=0;i<COLS;i++){if(guessArr[i]){const j=ansArr.indexOf(guessArr[i]);if(j>=0){result[i]='present';ansArr[j]=null;}}}
+  return result;
+}
+function revealRow(row,result){
+  result.forEach((r,c)=>{
+    setTimeout(()=>{const t=document.getElementById(`t${row}-${c}`);t.className='tile '+r;},c*120);
+  });
+}
+function updateKeyboard(word,result){
+  const priority={absent:0,present:1,correct:2};
+  [...word].forEach((l,i)=>{
+    const btn=document.getElementById('kb-'+l);if(!btn)return;
+    const cur=btn.className.includes('correct')?'correct':btn.className.includes('present')?'present':btn.className.includes('absent')?'absent':null;
+    if(!cur||priority[result[i]]>priority[cur]){btn.className='kb-key '+result[i]+(l.length>1?' wide':'');}
+  });
+}
+function shakeRow(row){for(let c=0;c<COLS;c++){const t=document.getElementById(`t${row}-${c}`);t.classList.add('shake');setTimeout(()=>t.classList.remove('shake'),400);}}
+function showMsg(text,type){const m=document.getElementById('msg');m.textContent=text;m.className='msg msg-'+type;if(type==='info')setTimeout(()=>{if(m.textContent===text){m.textContent='';m.className='msg';}},1500);}
+function updateStats(){document.getElementById('played').textContent=stats.played;document.getElementById('winpct').textContent=stats.played?Math.round(stats.wins/stats.played*100):0;document.getElementById('streak').textContent=stats.streak;document.getElementById('bestStreak').textContent=stats.best;}
+newGame();
+</script>
+</body>
+</html>

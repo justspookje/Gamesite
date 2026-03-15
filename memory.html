@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEMORY MATCH</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05050f;font-family:'Press Start 2P',monospace;color:#d0d0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;background:#0d0d1a;border-bottom:2px solid #1a1a35}
+nav a{color:#00ffff;text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav h1{font-size:.7rem;color:#fff;margin:0 auto;padding-right:4rem}
+.game{display:flex;flex-direction:column;align-items:center;padding:1.5rem;gap:1.2rem;width:100%}
+.hud{display:flex;gap:2rem;background:#0d0d1a;border:2px solid #1a1a35;padding:.8rem 1.5rem;border-radius:4px;flex-wrap:wrap;justify-content:center}
+.hud-item{text-align:center}
+.hud-label{font-size:.35rem;color:#44446a;margin-bottom:.3rem}
+.hud-val{font-size:.8rem}
+.size-row{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;justify-content:center}
+.size-btn{background:transparent;border:2px solid #44446a;color:#44446a;font-family:'Press Start 2P',monospace;font-size:.4rem;padding:.4rem .8rem;cursor:pointer;transition:.2s;border-radius:2px}
+.size-btn.active{border-color:#ff00cc;color:#ff00cc}
+.grid{display:grid;gap:.5rem;max-width:95vw}
+.card{aspect-ratio:1;background:#0d0d1a;border:2px solid #1a1a35;border-radius:6px;cursor:pointer;transition:transform .15s,background .15s;display:flex;align-items:center;justify-content:center;font-size:1.8rem;position:relative;overflow:hidden;user-select:none}
+.card:hover:not(.flipped):not(.matched){border-color:#888;transform:scale(1.05)}
+.card.flipped,.card.matched{background:#12122a;border-color:#44446a}
+.card .front{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform .3s;transform:rotateY(180deg);backface-visibility:hidden;font-size:inherit}
+.card .back{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform .3s;transform:rotateY(0deg);background:linear-gradient(135deg,#1a1a35,#0d0d20);font-size:.6rem;color:#2a2a5a}
+.card.flipped .front{transform:rotateY(0deg)}
+.card.flipped .back{transform:rotateY(-180deg)}
+.card.matched{border-color:#00ff88 !important;background:rgba(0,255,136,.1) !important;animation:match-pulse .4s ease}
+@keyframes match-pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.card.wrong{border-color:#ff3355 !important;animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.win-msg{font-size:.7rem;color:#00ff88;text-align:center;text-shadow:0 0 15px #00ff88;min-height:2.5rem;display:flex;align-items:center;justify-content:center}
+.new-btn{background:transparent;border:2px solid #00ffff;color:#00ffff;font-family:'Press Start 2P',monospace;font-size:.45rem;padding:.6rem 1.5rem;cursor:pointer;transition:.2s;border-radius:2px;letter-spacing:.1em}
+.new-btn:hover{background:#00ffff;color:#000;box-shadow:0 0 15px #00ffff}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>🃏 MEMORY MATCH</h1>
+</nav>
+<div class="game">
+  <div class="hud">
+    <div class="hud-item"><div class="hud-label">MOVES</div><div class="hud-val" id="moves" style="color:#00ffff">0</div></div>
+    <div class="hud-item"><div class="hud-label">MATCHES</div><div class="hud-val" id="matches" style="color:#00ff88">0</div></div>
+    <div class="hud-item"><div class="hud-label">TIME</div><div class="hud-val" id="timer" style="color:#ffee00">0:00</div></div>
+    <div class="hud-item"><div class="hud-label">BEST</div><div class="hud-val" id="best" style="color:#ff00cc">—</div></div>
+  </div>
+  <div class="size-row">
+    <span style="font-size:.38rem;color:#44446a">GRID:</span>
+    <button class="size-btn active" onclick="setSize(4,this)">4×4</button>
+    <button class="size-btn" onclick="setSize(5,this)">5×4</button>
+    <button class="size-btn" onclick="setSize(6,this)">6×6</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="win-msg" id="winMsg"></div>
+  <button class="new-btn" onclick="newGame()">↺ NEW GAME</button>
+</div>
+<script>
+const EMOJIS=['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🦆','🦅','🦉','🐺','🐗','🦋','🐛','🐢','🦎','🐊','🐙','🦑','🦀','🐡','🦈','🦞','🦩','🦚','🦜'];
+let gridSize=4,gridRows=4,cards=[],flipped=[],matched=0,moves=0,lock=false,timerInt=null,elapsed=0,started=false,bests={};
+function setSize(s,btn){
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  if(s===4){gridSize=4;gridRows=4}else if(s===5){gridSize=5;gridRows=4}else{gridSize=6;gridRows=6}
+  newGame();
+}
+function newGame(){
+  clearInterval(timerInt);elapsed=0;started=false;moves=0;matched=0;flipped=[];lock=false;
+  document.getElementById('moves').textContent=0;document.getElementById('matches').textContent=0;document.getElementById('timer').textContent='0:00';
+  document.getElementById('winMsg').textContent='';
+  const total=gridSize*gridRows;const pairs=total/2;
+  const pool=[...EMOJIS].sort(()=>Math.random()-.5).slice(0,pairs);
+  cards=[...pool,...pool].sort(()=>Math.random()-.5);
+  renderGrid();
+}
+function renderGrid(){
+  const g=document.getElementById('grid');
+  const cardW=Math.min(Math.floor((Math.min(window.innerWidth,600)-32)/gridSize)-6,80);
+  g.style.gridTemplateColumns=`repeat(${gridSize},${cardW}px)`;
+  g.style.fontSize=`${cardW*.55}px`;
+  g.innerHTML=cards.map((emoji,i)=>`
+    <div class="card" id="c${i}" onclick="flipCard(${i})">
+      <div class="back">?</div>
+      <div class="front">${emoji}</div>
+    </div>`).join('');
+}
+function flipCard(i){
+  if(lock||flipped.includes(i)||document.getElementById('c'+i).classList.contains('matched'))return;
+  if(!started){started=true;timerInt=setInterval(()=>{elapsed++;const m=Math.floor(elapsed/60);const s=elapsed%60;document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s;},1000);}
+  const card=document.getElementById('c'+i);
+  card.classList.add('flipped');
+  flipped.push(i);
+  if(flipped.length===2){
+    moves++;document.getElementById('moves').textContent=moves;lock=true;
+    const [a,b]=flipped;
+    if(cards[a]===cards[b]){
+      matched++;document.getElementById('matches').textContent=matched;
+      document.getElementById('c'+a).classList.add('matched');document.getElementById('c'+b).classList.add('matched');
+      flipped=[];lock=false;
+      if(matched===cards.length/2){winGame();}
+    } else {
+      document.getElementById('c'+a).classList.add('wrong');document.getElementById('c'+b).classList.add('wrong');
+      setTimeout(()=>{
+        document.getElementById('c'+a).classList.remove('flipped','wrong');
+        document.getElementById('c'+b).classList.remove('flipped','wrong');
+        flipped=[];lock=false;
+      },800);
+    }
+  }
+}
+function winGame(){
+  clearInterval(timerInt);
+  const key=gridSize+'x'+gridRows;
+  if(!bests[key]||moves<bests[key].moves){bests[key]={moves,time:elapsed};}
+  const b=bests[key];document.getElementById('best').textContent=b.moves+'m';
+  const stars=moves<=cards.length/2*1.5?'⭐⭐⭐':moves<=cards.length*1.2?'⭐⭐':'⭐';
+  document.getElementById('winMsg').textContent=`${stars} YOU WIN! ${moves} MOVES — ${document.getElementById('timer').textContent}`;
+}
+window.addEventListener('resize',()=>renderGrid());
+newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRIVIA BLAST</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05050f;font-family:'Press Start 2P',monospace;color:#d0d0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;background:#0d0d1a;border-bottom:2px solid #1a1a35}
+nav a{color:#00ffff;text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav h1{font-size:.7rem;color:#fff;margin:0 auto;padding-right:4rem}
+.game{width:100%;max-width:700px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+/* Home screen */
+.screen{width:100%;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+.screen.hidden{display:none}
+.big-title{font-size:1.5rem;background:linear-gradient(135deg,#00ffff,#ff00cc,#ffee00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;width:100%}
+.cat-card{background:#0d0d1a;border:2px solid #1a1a35;padding:1.5rem;cursor:pointer;transition:.2s;border-radius:4px;text-align:center;display:flex;flex-direction:column;gap:.8rem;text-decoration:none;color:inherit}
+.cat-card:hover{transform:scale(1.04);border-color:var(--c)}
+.cat-card .icon{font-size:2.5rem}
+.cat-card .name{font-size:.55rem;color:#fff}
+.cat-card .count{font-size:.38rem;color:#44446a}
+/* Quiz screen */
+.hud{width:100%;display:flex;justify-content:space-between;align-items:center;background:#0d0d1a;border:2px solid #1a1a35;padding:.8rem 1.2rem;border-radius:4px}
+.hud-item{text-align:center}
+.hud-label{font-size:.35rem;color:#44446a;margin-bottom:.3rem}
+.hud-val{font-size:.8rem}
+.cat-label{font-size:.38rem;color:#44446a;letter-spacing:.15em}
+.q-num{font-size:.4rem;color:#888}
+.timer-bar-bg{width:100%;height:8px;background:#1a1a35;border-radius:4px;overflow:hidden}
+.timer-bar{height:100%;background:linear-gradient(90deg,#00ff88,#ffee00,#ff3355);transition:width .1s linear;border-radius:4px}
+.question-box{width:100%;background:#0d0d1a;border:2px solid #1a1a35;padding:1.5rem;border-radius:4px;min-height:100px;display:flex;align-items:center;justify-content:center}
+.question-text{font-size:.6rem;line-height:2;text-align:center;color:#fff}
+.answers{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.ans-btn{background:#0a0a18;border:2px solid #1a1a35;color:#d0d0ff;font-family:'Press Start 2P',monospace;font-size:.45rem;padding:1rem .8rem;cursor:pointer;transition:.2s;border-radius:4px;line-height:1.8;text-align:left}
+.ans-btn:hover:not(:disabled){border-color:#00ffff;color:#00ffff;box-shadow:0 0 10px rgba(0,255,255,.2)}
+.ans-btn:disabled{cursor:default}
+.ans-btn.correct{border-color:#00ff88;background:rgba(0,255,136,.15);color:#00ff88}
+.ans-btn.wrong{border-color:#ff3355;background:rgba(255,51,85,.1);color:#ff3355}
+.feedback{font-size:.7rem;text-align:center;min-height:3rem;display:flex;align-items:center;justify-content:center}
+.feedback.good{color:#00ff88;text-shadow:0 0 12px #00ff88}
+.feedback.bad{color:#ff3355;text-shadow:0 0 12px #ff3355}
+/* Result screen */
+.result-circle{width:150px;height:150px;border-radius:50%;border:4px solid #00ffff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,255,255,.3)}
+.result-pct{font-size:1.8rem;color:#00ffff}
+.result-label{font-size:.4rem;color:#44446a;margin-top:.3rem}
+.result-stats{display:flex;gap:2rem;flex-wrap:wrap;justify-content:center}
+.rs{text-align:center}.rs-l{font-size:.35rem;color:#44446a;margin-bottom:.4rem}.rs-v{font-size:.9rem}
+.play-btn{background:transparent;border:2px solid #00ffff;color:#00ffff;font-family:'Press Start 2P',monospace;font-size:.5rem;padding:.8rem 2rem;cursor:pointer;transition:.2s;border-radius:2px;letter-spacing:.1em}
+.play-btn:hover{background:#00ffff;color:#000;box-shadow:0 0 15px #00ffff}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>🧠 TRIVIA BLAST</h1>
+</nav>
+<div class="game">
+<!-- HOME -->
+<div class="screen" id="homeScreen">
+  <div class="big-title">CHOOSE<br>CATEGORY</div>
+  <div class="cat-grid">
+    <div class="cat-card" style="--c:#00ffff" onclick="startQuiz('science')"><div class="icon">🔬</div><div class="name">SCIENCE</div><div class="count">10 QUESTIONS</div></div>
+    <div class="cat-card" style="--c:#ff00cc" onclick="startQuiz('history')"><div class="icon">📜</div><div class="name">HISTORY</div><div class="count">10 QUESTIONS</div></div>
+    <div class="cat-card" style="--c:#ffee00" onclick="startQuiz('geography')"><div class="icon">🌍</div><div class="name">GEOGRAPHY</div><div class="count">10 QUESTIONS</div></div>
+    <div class="cat-card" style="--c:#00ff88" onclick="startQuiz('popculture')"><div class="icon">🎬</div><div class="name">POP CULTURE</div><div class="count">10 QUESTIONS</div></div>
+    <div class="cat-card" style="--c:#ff6600" onclick="startQuiz('gaming')"><div class="icon">🎮</div><div class="name">VIDEO GAMES</div><div class="count">10 QUESTIONS</div></div>
+    <div class="cat-card" style="--c:#aa88ff" onclick="startQuiz('mixed')"><div class="icon">🎲</div><div class="name">MIXED BAG</div><div class="count">10 QUESTIONS</div></div>
+  </div>
+</div>
+<!-- QUIZ -->
+<div class="screen hidden" id="quizScreen">
+  <div class="hud">
+    <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="scoreVal" style="color:#00ffff">0</div></div>
+    <div class="hud-item"><div class="cat-label" id="catLabel">SCIENCE</div><div class="q-num" id="qNum">Q 1 / 10</div></div>
+    <div class="hud-item"><div class="hud-label">STREAK</div><div class="hud-val" id="streakVal" style="color:#ffee00">0🔥</div></div>
+  </div>
+  <div class="timer-bar-bg"><div class="timer-bar" id="timerBar"></div></div>
+  <div class="question-box"><div class="question-text" id="questionText">Loading...</div></div>
+  <div class="answers" id="answersGrid"></div>
+  <div class="feedback" id="feedback"></div>
+</div>
+<!-- RESULTS -->
+<div class="screen hidden" id="resultScreen">
+  <div class="result-circle"><div class="result-pct" id="resultPct">0%</div><div class="result-label">CORRECT</div></div>
+  <div id="resultMsg" style="font-size:.6rem;text-align:center"></div>
+  <div class="result-stats">
+    <div class="rs"><div class="rs-l">CORRECT</div><div class="rs-v" id="rCorrect" style="color:#00ff88">0</div></div>
+    <div class="rs"><div class="rs-l">WRONG</div><div class="rs-v" id="rWrong" style="color:#ff3355">0</div></div>
+    <div class="rs"><div class="rs-l">BEST STREAK</div><div class="rs-v" id="rStreak" style="color:#ffee00">0</div></div>
+    <div class="rs"><div class="rs-l">SCORE</div><div class="rs-v" id="rScore" style="color:#00ffff">0</div></div>
+  </div>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">
+    <button class="play-btn" onclick="showHome()">◀ CATEGORIES</button>
+    <button class="play-btn" id="replayBtn" onclick="replayQuiz()" style="border-color:#ff00cc;color:#ff00cc">↺ REPLAY</button>
+  </div>
+</div>
+</div>
+<script>
+const db={
+science:[
+  {q:"What is the chemical symbol for Gold?",a:"Au",w:["Ag","Fe","Gd"]},
+  {q:"How many bones are in the adult human body?",a:"206",w:["198","214","220"]},
+  {q:"What planet is known as the Red Planet?",a:"Mars",w:["Venus","Jupiter","Saturn"]},
+  {q:"What is the speed of light (approx)?",a:"299,792 km/s",w:["150,000 km/s","500,000 km/s","100,000 km/s"]},
+  {q:"DNA stands for?",a:"Deoxyribonucleic Acid",w:["Dinitrogen Acid","Dipeptide Amino Acid","Dimethyl Nitric Acid"]},
+  {q:"What gas do plants absorb from the air?",a:"Carbon Dioxide",w:["Oxygen","Nitrogen","Hydrogen"]},
+  {q:"What is the powerhouse of the cell?",a:"Mitochondria",w:["Nucleus","Ribosome","Golgi body"]},
+  {q:"How many chromosomes do humans have?",a:"46",w:["23","48","44"]},
+  {q:"What is H2O commonly known as?",a:"Water",w:["Hydrogen Peroxide","Hydrochloric Acid","Salt Water"]},
+  {q:"Which planet has the most moons?",a:"Saturn",w:["Jupiter","Uranus","Neptune"]},
+],
+history:[
+  {q:"In what year did World War II end?",a:"1945",w:["1943","1944","1946"]},
+  {q:"Who was the first US President?",a:"George Washington",w:["John Adams","Thomas Jefferson","Benjamin Franklin"]},
+  {q:"The Great Wall of China was built to protect against who?",a:"Mongol invasions",w:["Persian invasions","Japanese raids","Korean forces"]},
+  {q:"Who painted the Mona Lisa?",a:"Leonardo da Vinci",w:["Michelangelo","Raphael","Caravaggio"]},
+  {q:"In what year did the Berlin Wall fall?",a:"1989",w:["1991","1987","1985"]},
+  {q:"The Titanic sank in which year?",a:"1912",w:["1908","1915","1920"]},
+  {q:"Who was the first person to walk on the moon?",a:"Neil Armstrong",w:["Buzz Aldrin","Yuri Gagarin","John Glenn"]},
+  {q:"Which empire was ruled by Julius Caesar?",a:"Roman Empire",w:["Greek Empire","Ottoman Empire","Byzantine Empire"]},
+  {q:"The French Revolution began in which year?",a:"1789",w:["1799","1776","1815"]},
+  {q:"Who wrote the Declaration of Independence (primary author)?",a:"Thomas Jefferson",w:["Benjamin Franklin","John Adams","James Madison"]},
+],
+geography:[
+  {q:"What is the capital of Australia?",a:"Canberra",w:["Sydney","Melbourne","Brisbane"]},
+  {q:"Which is the longest river in the world?",a:"Nile",w:["Amazon","Yangtze","Mississippi"]},
+  {q:"How many countries are in Africa?",a:"54",w:["48","57","61"]},
+  {q:"What is the smallest country in the world?",a:"Vatican City",w:["Monaco","San Marino","Liechtenstein"]},
+  {q:"Which ocean is the largest?",a:"Pacific",w:["Atlantic","Indian","Arctic"]},
+  {q:"Mount Everest is located in which mountain range?",a:"Himalayas",w:["Andes","Alps","Rockies"]},
+  {q:"What is the capital of Canada?",a:"Ottawa",w:["Toronto","Vancouver","Montreal"]},
+  {q:"Which country has the most natural lakes?",a:"Canada",w:["Russia","USA","Finland"]},
+  {q:"The Amazon Rainforest is primarily in which country?",a:"Brazil",w:["Peru","Colombia","Venezuela"]},
+  {q:"What is the capital of Japan?",a:"Tokyo",w:["Osaka","Kyoto","Hiroshima"]},
+],
+popculture:[
+  {q:"Who played Iron Man in the MCU?",a:"Robert Downey Jr.",w:["Chris Evans","Chris Hemsworth","Mark Ruffalo"]},
+  {q:"Which band sang 'Bohemian Rhapsody'?",a:"Queen",w:["The Beatles","Led Zeppelin","Rolling Stones"]},
+  {q:"What streaming service produced 'Stranger Things'?",a:"Netflix",w:["Disney+","HBO","Amazon Prime"]},
+  {q:"Which movie features the character 'Simba'?",a:"The Lion King",w:["Bambi","Jungle Book","Tarzan"]},
+  {q:"'Friends' is set in which US city?",a:"New York City",w:["Los Angeles","Chicago","Boston"]},
+  {q:"Who wrote the Harry Potter series?",a:"J.K. Rowling",w:["Stephen King","Tolkien","Roald Dahl"]},
+  {q:"Which artist released 'Thriller' (1982)?",a:"Michael Jackson",w:["Prince","Madonna","David Bowie"]},
+  {q:"The Oscars are officially known as?",a:"Academy Awards",w:["Golden Globes","BAFTA Awards","Emmy Awards"]},
+  {q:"Which superhero is also known as 'The Dark Knight'?",a:"Batman",w:["Superman","Spider-Man","Black Panther"]},
+  {q:"What color is The Incredible Hulk?",a:"Green",w:["Blue","Purple","Red"]},
+],
+gaming:[
+  {q:"What year was the original Minecraft released (full)?",a:"2011",w:["2009","2012","2010"]},
+  {q:"Which company created the Zelda franchise?",a:"Nintendo",w:["Sega","Sony","Capcom"]},
+  {q:"What is the best-selling video game of all time?",a:"Minecraft",w:["Tetris","GTA V","Wii Sports"]},
+  {q:"'It's-a me, Mario!' is said by which character?",a:"Mario",w:["Luigi","Wario","Waluigi"]},
+  {q:"What game uses the phrases 'Creeper' and 'Enderman'?",a:"Minecraft",w:["Terraria","Roblox","Fortnite"]},
+  {q:"Sonic the Hedgehog was created by which company?",a:"Sega",w:["Nintendo","Atari","Capcom"]},
+  {q:"In Pac-Man, what are the ghosts NOT named?",a:"Ziggy",w:["Blinky","Pinky","Inky"]},
+  {q:"Which game features 'Battle Royale' with 100 players on an island?",a:"Fortnite",w:["PUBG","Warzone","Apex Legends"]},
+  {q:"The Pokémon franchise started in which year?",a:"1996",w:["1999","2001","1994"]},
+  {q:"What is the name of the main character in The Legend of Zelda?",a:"Link",w:["Zelda","Ganon","Sheik"]},
+],
+mixed:[
+  {q:"How many sides does a hexagon have?",a:"6",w:["5","7","8"]},
+  {q:"What is the largest organ in the human body?",a:"Skin",w:["Liver","Brain","Lungs"]},
+  {q:"Which language has the most native speakers?",a:"Mandarin Chinese",w:["Spanish","English","Hindi"]},
+  {q:"What is the square root of 144?",a:"12",w:["11","13","14"]},
+  {q:"What does 'WWW' stand for in a web address?",a:"World Wide Web",w:["World Wire Web","Wide World Web","Wireless Web World"]},
+  {q:"How many players are on a basketball team (on court)?",a:"5",w:["6","4","7"]},
+  {q:"What is the most abundant gas in Earth's atmosphere?",a:"Nitrogen",w:["Oxygen","Carbon Dioxide","Argon"]},
+  {q:"In music, how many notes are in an octave?",a:"8",w:["7","12","6"]},
+  {q:"What is the currency of Japan?",a:"Yen",w:["Won","Yuan","Baht"]},
+  {q:"How many continents are there?",a:"7",w:["6","8","5"]},
+]};
+let curCat,questions,qi,score,streak,bestStreak,correct,timer,timeLeft;
+function shuffle(a){return a.sort(()=>Math.random()-.5)}
+function showHome(){document.getElementById('homeScreen').classList.remove('hidden');document.getElementById('quizScreen').classList.add('hidden');document.getElementById('resultScreen').classList.add('hidden');clearTimeout(timer)}
+function startQuiz(cat){curCat=cat;questions=shuffle([...db[cat]]).slice(0,10);qi=0;score=0;streak=0;bestStreak=0;correct=0;
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('quizScreen').classList.remove('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('catLabel').textContent=cat.toUpperCase();
+  showQuestion();}
+function replayQuiz(){startQuiz(curCat)}
+function showQuestion(){
+  if(qi>=questions.length){showResults();return}
+  const q=questions[qi];
+  document.getElementById('qNum').textContent=`Q ${qi+1} / ${questions.length}`;
+  document.getElementById('questionText').textContent=q.q;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  const opts=shuffle([q.a,...q.w]);
+  document.getElementById('answersGrid').innerHTML=opts.map(o=>`<button class="ans-btn" onclick="answer('${o.replace(/'/g,"\\'")}','${q.a.replace(/'/g,"\\'")}',this)">${o}</button>`).join('');
+  timeLeft=15;updateTimer();clearInterval(timer);
+  timer=setInterval(()=>{timeLeft-=.1;updateTimer();if(timeLeft<=0){clearInterval(timer);timeUp(q.a);}},100);
+}
+function updateTimer(){document.getElementById('timerBar').style.width=(timeLeft/15*100)+'%'}
+function timeUp(ans){
+  document.getElementById('answersGrid').querySelectorAll('.ans-btn').forEach(b=>{b.disabled=true;if(b.textContent===ans)b.classList.add('correct');});
+  const fb=document.getElementById('feedback');fb.textContent='⏱️ TIME UP!';fb.className='feedback bad';
+  streak=0;document.getElementById('streakVal').textContent=streak+'🔥';
+  setTimeout(()=>{qi++;showQuestion()},1800);
+}
+function answer(chosen,correct_ans,btn){
+  clearInterval(timer);
+  document.getElementById('answersGrid').querySelectorAll('.ans-btn').forEach(b=>{b.disabled=true;if(b.textContent===correct_ans)b.classList.add('correct');});
+  const fb=document.getElementById('feedback');
+  if(chosen===correct_ans){
+    btn.classList.add('correct');streak++;bestStreak=Math.max(bestStreak,streak);
+    const bonus=Math.floor(timeLeft)*streak;score+=100+bonus;correct++;
+    fb.textContent=`✓ CORRECT! +${100+bonus}`;fb.className='feedback good';
+    document.getElementById('streakVal').textContent=streak+'🔥';
+  } else {
+    btn.classList.add('wrong');streak=0;fb.textContent='✗ WRONG!';fb.className='feedback bad';
+    document.getElementById('streakVal').textContent='0🔥';
+  }
+  document.getElementById('scoreVal').textContent=score;
+  setTimeout(()=>{qi++;showQuestion()},1500);
+}
+function showResults(){
+  document.getElementById('quizScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+  const pct=Math.round(correct/questions.length*100);
+  document.getElementById('resultPct').textContent=pct+'%';
+  document.getElementById('rCorrect').textContent=correct;
+  document.getElementById('rWrong').textContent=questions.length-correct;
+  document.getElementById('rStreak').textContent=bestStreak;
+  document.getElementById('rScore').textContent=score;
+  const msgs=['KEEP PRACTICING!','NOT BAD!','GOOD JOB!','GREAT WORK!','EXCELLENT!','PERFECT SCORE!'];
+  const mi=Math.floor(pct/20);
+  document.getElementById('resultMsg').textContent=msgs[Math.min(mi,5)];
+}
+</script>
+</body>
+</html>

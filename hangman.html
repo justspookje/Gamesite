@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HANGMAN</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05050f;font-family:'Press Start 2P',monospace;color:#d0d0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;gap:1rem;background:#0d0d1a;border-bottom:2px solid #1a1a35}
+nav a{color:#00ffff;text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav a:hover{text-shadow:0 0 10px #00ffff}
+nav h1{font-size:.7rem;color:#fff;margin:0 auto;padding-right:4rem}
+.game{width:100%;max-width:800px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem}
+.category-bar{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center}
+.cat-btn{background:transparent;border:2px solid #44446a;color:#44446a;font-family:'Press Start 2P',monospace;font-size:.38rem;padding:.4rem .7rem;cursor:pointer;transition:.2s;border-radius:2px}
+.cat-btn.active{border-color:#ffee00;color:#ffee00;box-shadow:0 0 8px rgba(255,238,0,.3)}
+.cat-btn:hover{border-color:#888;color:#aaa}
+.arena{display:flex;gap:3rem;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%}
+.gallows-area{display:flex;flex-direction:column;align-items:center;gap.5rem}
+svg#gallows{border:1px solid #1a1a35;border-radius:4px;background:#0a0a18}
+.lives{font-size:.45rem;color:#ff6600;text-align:center;margin-top:.5rem}
+.word-area{display:flex;flex-direction:column;align-items:center;gap:1.5rem;flex:1;min-width:260px}
+.hint-badge{font-size:.38rem;color:#888;background:#0d0d1a;border:1px solid #1a1a35;padding:.4rem .8rem;border-radius:2px;letter-spacing:.08em}
+.word-display{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
+.letter-slot{width:32px;height:40px;border-bottom:3px solid #44446a;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#00ffff;text-transform:uppercase;transition:.3s}
+.letter-slot.blank{border-bottom-color:#1a1a35}
+.letter-slot.space{border-bottom:none;width:20px}
+.wrong-letters{font-size:.5rem;color:#ff3355;letter-spacing:.15em;text-align:center;min-height:1.5rem}
+.keyboard{display:flex;flex-direction:column;gap:.4rem;align-items:center}
+.key-row{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:center}
+.key-btn{background:#0d0d1a;border:2px solid #1a1a35;color:#d0d0ff;font-family:'Press Start 2P',monospace;font-size:.5rem;width:38px;height:38px;cursor:pointer;transition:.2s;border-radius:3px}
+.key-btn:hover:not(:disabled){border-color:#00ffff;color:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.3)}
+.key-btn:disabled{opacity:.25;cursor:default;border-color:#0d0d1a}
+.key-btn.wrong-key{border-color:#ff3355;color:#ff3355;background:rgba(255,51,85,.1)}
+.key-btn.right-key{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,.1)}
+.status{font-size:.9rem;text-align:center;min-height:3rem;display:flex;flex-direction:column;gap:.5rem;align-items:center;justify-content:center}
+.status.win{color:#00ff88;text-shadow:0 0 15px #00ff88}
+.status.lose{color:#ff3355;text-shadow:0 0 15px #ff3355}
+.new-btn{background:transparent;border:2px solid #ff00cc;color:#ff00cc;font-family:'Press Start 2P',monospace;font-size:.45rem;padding:.6rem 1.5rem;cursor:pointer;transition:.2s;letter-spacing:.1em;border-radius:2px}
+.new-btn:hover{background:#ff00cc;color:#000;box-shadow:0 0 15px #ff00cc}
+.scores{display:flex;gap:2rem;font-size:.5rem}
+.sc{text-align:center}.sc-l{color:#44446a;font-size:.35rem;margin-bottom:.3rem}
+.sc-n{color:#00ffff}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>🪢 HANGMAN</h1>
+</nav>
+<div class="game">
+  <div class="scores">
+    <div class="sc"><div class="sc-l">WINS</div><div class="sc-n" id="swins">0</div></div>
+    <div class="sc"><div class="sc-l">LOSSES</div><div class="sc-n" id="slosses" style="color:#ff3355">0</div></div>
+    <div class="sc"><div class="sc-l">STREAK</div><div class="sc-n" id="sstreak" style="color:#ffee00">0</div></div>
+  </div>
+  <div class="category-bar">
+    <button class="cat-btn active" onclick="setCat('all',this)">ALL</button>
+    <button class="cat-btn" onclick="setCat('animals',this)">ANIMALS</button>
+    <button class="cat-btn" onclick="setCat('food',this)">FOOD</button>
+    <button class="cat-btn" onclick="setCat('sports',this)">SPORTS</button>
+    <button class="cat-btn" onclick="setCat('tech',this)">TECH</button>
+    <button class="cat-btn" onclick="setCat('movies',this)">MOVIES</button>
+  </div>
+  <div class="arena">
+    <div class="gallows-area">
+      <svg id="gallows" width="160" height="200" viewBox="0 0 160 200">
+        <line x1="10" y1="195" x2="150" y2="195" stroke="#44446a" stroke-width="4"/>
+        <line x1="40" y1="195" x2="40" y2="10" stroke="#44446a" stroke-width="4"/>
+        <line x1="40" y1="10" x2="100" y2="10" stroke="#44446a" stroke-width="4"/>
+        <line x1="100" y1="10" x2="100" y2="35" stroke="#44446a" stroke-width="3"/>
+        <circle id="g-head" cx="100" cy="50" r="15" stroke="#ff3355" stroke-width="3" fill="none" opacity="0"/>
+        <line id="g-body" x1="100" y1="65" x2="100" y2="120" stroke="#ff3355" stroke-width="3" opacity="0"/>
+        <line id="g-larm" x1="100" y1="80" x2="75" y2="105" stroke="#ff3355" stroke-width="3" opacity="0"/>
+        <line id="g-rarm" x1="100" y1="80" x2="125" y2="105" stroke="#ff3355" stroke-width="3" opacity="0"/>
+        <line id="g-lleg" x1="100" y1="120" x2="75" y2="155" stroke="#ff3355" stroke-width="3" opacity="0"/>
+        <line id="g-rleg" x1="100" y1="120" x2="125" y2="155" stroke="#ff3355" stroke-width="3" opacity="0"/>
+      </svg>
+      <div class="lives" id="livesText">❤️❤️❤️❤️❤️❤️</div>
+    </div>
+    <div class="word-area">
+      <div class="hint-badge" id="categoryBadge">CATEGORY: ALL</div>
+      <div class="word-display" id="wordDisplay"></div>
+      <div class="wrong-letters" id="wrongLetters">WRONG:</div>
+      <div class="status" id="status"></div>
+      <button class="new-btn" onclick="newGame()">▶ NEW WORD</button>
+    </div>
+  </div>
+  <div class="keyboard" id="keyboard"></div>
+</div>
+<script>
+const words={
+  animals:['ELEPHANT','PENGUIN','CROCODILE','BUTTERFLY','CHEETAH','FLAMINGO','GORILLA','HEDGEHOG','IGUANA','JAGUAR','KANGAROO','LEMUR','MONGOOSE','NARWHAL','OCTOPUS','PLATYPUS','QUOKKA','RHINOCEROS','SALAMANDER','TOUCAN','WOMBAT','ZEBRA'],
+  food:['AVOCADO','BURRITO','CROISSANT','DOUGHNUT','ENCHILADA','FALAFEL','GUACAMOLE','HUMMUS','KIMCHI','LASAGNA','MOZZARELLA','NOODLES','PANCAKE','QUESADILLA','RAMEN','SPAGHETTI','TIRAMISU','WAFFLE'],
+  sports:['ARCHERY','BASEBALL','CRICKET','DODGEBALL','FENCING','GYMNASTICS','HOCKEY','JAVELIN','KAYAKING','LACROSSE','MARATHON','NETBALL','POLO','ROWING','SKATEBOARD','TENNIS','VOLLEYBALL','WRESTLING'],
+  tech:['ALGORITHM','BANDWIDTH','COMPILER','DATABASE','ETHERNET','FIREWALL','GITHUB','HARDWARE','INTERNET','JAVASCRIPT','KEYBOARD','LAPTOP','MONITOR','NETWORK','OPERATING','PYTHON','QUANTUM','ROUTER','SERVER','TYPESCRIPT'],
+  movies:['AVATAR','BATMAN','CASABLANCA','DUNKIRK','ETERNALS','FROZEN','GLADIATOR','INCEPTION','JUMANJI','KNIVES','LABYRINTH','MATRIX','NOMADLAND','OPPENHEIMER','PARASITE','ROCKY','TITANIC','UNCUT'],
+};
+let cat='all',word='',guessed=new Set(),wrong=[],maxWrong=6,stats={w:0,l:0,s:0};
+const parts=['g-head','g-body','g-larm','g-rarm','g-lleg','g-rleg'];
+function setCat(c,btn){cat=c;document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');newGame()}
+function getWord(){
+  const pool=cat==='all'?Object.values(words).flat():words[cat];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function newGame(){
+  word=getWord();guessed=new Set();wrong=[];
+  document.getElementById('categoryBadge').textContent='CATEGORY: '+(cat.toUpperCase());
+  document.getElementById('status').innerHTML='';document.getElementById('status').className='status';
+  parts.forEach(id=>document.getElementById(id).style.opacity=0);
+  updateDisplay();buildKeyboard();
+  document.getElementById('livesText').textContent='❤️'.repeat(maxWrong-wrong.length);
+  document.getElementById('wrongLetters').textContent='WRONG: ';
+}
+function buildKeyboard(){
+  const k=document.getElementById('keyboard');
+  const rows=['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+  k.innerHTML=rows.map(r=>`<div class="key-row">${[...r].map(l=>`<button class="key-btn" id="key-${l}" onclick="guess('${l}')">${l}</button>`).join('')}</div>`).join('');
+}
+function updateDisplay(){
+  const d=document.getElementById('wordDisplay');
+  d.innerHTML=[...word].map(l=>l===' '?`<div class="letter-slot space"></div>`:`<div class="letter-slot ${guessed.has(l)?'':'blank'}">${guessed.has(l)?l:''}</div>`).join('');
+}
+function guess(l){
+  if(guessed.has(l)||wrong.includes(l)||document.getElementById('status').textContent)return;
+  guessed.add(l);
+  const btn=document.getElementById('key-'+l);
+  if(word.includes(l)){btn.classList.add('right-key')}
+  else{
+    wrong.push(l);btn.classList.add('wrong-key');
+    document.getElementById(parts[wrong.length-1]).style.opacity=1;
+    document.getElementById('livesText').textContent='❤️'.repeat(maxWrong-wrong.length)+'🖤'.repeat(wrong.length);
+    document.getElementById('wrongLetters').textContent='WRONG: '+wrong.join(' ');
+  }
+  btn.disabled=true;
+  updateDisplay();
+  checkWin();
+}
+function checkWin(){
+  const st=document.getElementById('status');
+  if([...word].filter(l=>l!==' ').every(l=>guessed.has(l))){
+    st.innerHTML='🎉 YOU GOT IT!<br><span style="font-size:.5rem;color:#aaa">"'+word+'"</span>';
+    st.className='status win';stats.w++;stats.s++;
+  } else if(wrong.length>=maxWrong){
+    st.innerHTML='💀 GAME OVER!<br><span style="font-size:.5rem;color:#aaa">Word: "'+word+'"</span>';
+    st.className='status lose';stats.l++;stats.s=0;
+    [...word].filter(l=>l!==' ').forEach(l=>{if(!guessed.has(l)){const s=document.querySelectorAll('.letter-slot');[...document.querySelectorAll('.word-display .letter-slot')].filter((_,i)=>[...word].filter(c=>c!==' ')[i]===l).forEach(el=>el.textContent=l)}});
+    // reveal word
+    const slots=document.querySelectorAll('#wordDisplay .letter-slot:not(.space)');
+    let wi=0;[...word].forEach((l,i)=>{if(l!==' '){if(!guessed.has(l)){slots[wi].textContent=l;slots[wi].style.color='#ff3355'}wi++}});
+  }
+  document.getElementById('swins').textContent=stats.w;
+  document.getElementById('slosses').textContent=stats.l;
+  document.getElementById('sstreak').textContent=stats.s;
+}
+newGame();
+</script>
+</body>
+</html>

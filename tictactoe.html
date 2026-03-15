@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIC TAC TOE</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05050f;font-family:'Press Start 2P',monospace;color:#d0d0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;background:#0d0d1a;border-bottom:2px solid #1a1a35}
+nav a{color:#00ffff;text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav h1{font-size:.7rem;color:#fff;margin:0 auto;padding-right:4rem}
+.game{display:flex;flex-direction:column;align-items:center;padding:2rem;gap:1.5rem;max-width:500px;width:100%}
+.scores{display:flex;gap:2rem;background:#0d0d1a;border:2px solid #1a1a35;padding:1rem 2rem;border-radius:4px;flex-wrap:wrap;justify-content:center}
+.sc{text-align:center}.sc-l{font-size:.35rem;color:#44446a;margin-bottom:.3rem}.sc-v{font-size:1.2rem}
+.mode-row{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center}
+.mode-btn{background:transparent;border:2px solid #44446a;color:#44446a;font-family:'Press Start 2P',monospace;font-size:.4rem;padding:.4rem .8rem;cursor:pointer;transition:.2s;border-radius:2px}
+.mode-btn.active{border-color:#ffee00;color:#ffee00}
+.turn-bar{font-size:.55rem;text-align:center;min-height:2rem;display:flex;align-items:center;justify-content:center}
+.turn-x{color:#00ffff;text-shadow:0 0 10px #00ffff}
+.turn-o{color:#ff00cc;text-shadow:0 0 10px #ff00cc}
+.board{display:grid;grid-template-columns:repeat(3,120px);grid-template-rows:repeat(3,120px);gap:6px;background:#1a1a35;border:3px solid #1a1a35;border-radius:6px;overflow:hidden}
+.cell{background:#0a0a18;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:3.5rem;transition:background .15s;user-select:none}
+.cell:hover:not(.taken){background:#12122a}
+.cell.x-mark{color:#00ffff;text-shadow:0 0 15px #00ffff}
+.cell.o-mark{color:#ff00cc;text-shadow:0 0 15px #ff00cc}
+.cell.win-cell{background:rgba(255,238,0,.15) !important;animation:glow-cell .5s ease-in-out infinite alternate}
+@keyframes glow-cell{from{background:rgba(255,238,0,.1)}to{background:rgba(255,238,0,.25)}}
+.result{font-size:.8rem;text-align:center;min-height:2.5rem;display:flex;align-items:center;justify-content:center}
+.res-win{color:#00ff88;text-shadow:0 0 12px #00ff88}
+.res-lose{color:#ff3355;text-shadow:0 0 12px #ff3355}
+.res-draw{color:#ffee00}
+.btns{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn{background:transparent;border:2px solid;font-family:'Press Start 2P',monospace;font-size:.4rem;padding:.6rem 1.2rem;cursor:pointer;transition:.2s;border-radius:2px;letter-spacing:.08em}
+.btn-cyan{border-color:#00ffff;color:#00ffff}.btn-cyan:hover{background:#00ffff;color:#000;box-shadow:0 0 12px #00ffff}
+.btn-pink{border-color:#ff00cc;color:#ff00cc}.btn-pink:hover{background:#ff00cc;color:#000}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>❎ TIC TAC TOE</h1>
+</nav>
+<div class="game">
+  <div class="scores">
+    <div class="sc"><div class="sc-l">X WINS</div><div class="sc-v" id="xWins" style="color:#00ffff">0</div></div>
+    <div class="sc"><div class="sc-l">DRAWS</div><div class="sc-v" id="draws" style="color:#ffee00">0</div></div>
+    <div class="sc"><div class="sc-l">O WINS</div><div class="sc-v" id="oWins" style="color:#ff00cc">0</div></div>
+  </div>
+  <div class="mode-row">
+    <span style="font-size:.38rem;color:#44446a">MODE:</span>
+    <button class="mode-btn active" onclick="setMode('ai-easy',this)">VS AI EASY</button>
+    <button class="mode-btn" onclick="setMode('ai-hard',this)">VS AI HARD</button>
+    <button class="mode-btn" onclick="setMode('2p',this)">2 PLAYER</button>
+  </div>
+  <div class="turn-bar" id="turnBar"><span class="turn-x">X'S TURN</span></div>
+  <div class="board" id="board"></div>
+  <div class="result" id="result"></div>
+  <div class="btns">
+    <button class="btn btn-cyan" onclick="newGame()">↺ NEW GAME</button>
+    <button class="btn btn-pink" onclick="resetScores()">RESET SCORES</button>
+  </div>
+</div>
+<script>
+let board,currentPlayer,gameMode='ai-easy',gameOver,scores={x:0,o:0,draw:0};
+const WIN_LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function setMode(m,btn){gameMode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');newGame();}
+function newGame(){board=Array(9).fill('');currentPlayer='X';gameOver=false;renderBoard();document.getElementById('result').textContent='';setTurnBar();}
+function resetScores(){scores={x:0,o:0,draw:0};document.getElementById('xWins').textContent=0;document.getElementById('oWins').textContent=0;document.getElementById('draws').textContent=0;newGame();}
+function setTurnBar(){
+  const tb=document.getElementById('turnBar');
+  if(gameOver){tb.innerHTML='';return;}
+  const isAI=gameMode!=='2p'&&currentPlayer==='O';
+  tb.innerHTML=currentPlayer==='X'?`<span class="turn-x">X'S TURN</span>`:`<span class="turn-o">${isAI?'AI THINKING...':'O\'S TURN'}</span>`;
+}
+function renderBoard(){
+  const b=document.getElementById('board');
+  b.innerHTML=board.map((cell,i)=>`<div class="cell${cell?' taken':''} ${cell==='X'?'x-mark':cell==='O'?'o-mark':''}" id="cell${i}" onclick="clickCell(${i})">${cell==='X'?'✕':cell==='O'?'◯':''}</div>`).join('');
+}
+function clickCell(i){
+  if(gameOver||board[i])return;
+  if(gameMode!=='2p'&&currentPlayer==='O')return;
+  makeMove(i);
+}
+function makeMove(i){
+  board[i]=currentPlayer;renderBoard();
+  const win=checkWin();
+  if(win){endGame(win);return;}
+  if(board.every(c=>c)){endGame(null);return;}
+  currentPlayer=currentPlayer==='X'?'O':'X';
+  setTurnBar();
+  if(gameMode!=='2p'&&currentPlayer==='O'){setTimeout(aiMove,400);}
+}
+function aiMove(){
+  let idx;
+  if(gameMode==='ai-hard')idx=minimax(board,'O').idx;
+  else{
+    // Easy: 70% random, 30% smart
+    if(Math.random()<.7){const empty=board.map((_,i)=>i).filter(i=>!board[i]);idx=empty[Math.floor(Math.random()*empty.length)];}
+    else idx=minimax(board,'O').idx;
+  }
+  makeMove(idx);
+}
+function minimax(b,player,depth=0){
+  const w=checkWinFor(b);
+  if(w==='O')return{score:10-depth};
+  if(w==='X')return{score:depth-10};
+  const empty=b.map((_,i)=>i).filter(i=>!b[i]);
+  if(empty.length===0)return{score:0};
+  const moves=empty.map(i=>{const nb=[...b];nb[i]=player;const result=minimax(nb,player==='O'?'X':'O',depth+1);return{idx:i,score:result.score}});
+  if(player==='O')return moves.reduce((best,m)=>m.score>best.score?m:best,{score:-Infinity});
+  return moves.reduce((best,m)=>m.score<best.score?m:best,{score:Infinity});
+}
+function checkWinFor(b){
+  for(const [a,c,d]of WIN_LINES){if(b[a]&&b[a]===b[c]&&b[a]===b[d])return b[a];}return null;
+}
+function checkWin(){
+  for(const line of WIN_LINES){const[a,c,d]=line;if(board[a]&&board[a]===board[c]&&board[a]===board[d])return{winner:board[a],line};} return null;
+}
+function endGame(winData){
+  gameOver=true;
+  const res=document.getElementById('result');
+  if(winData){
+    winData.line.forEach(i=>document.getElementById('cell'+i).classList.add('win-cell'));
+    const isAI=gameMode!=='2p'&&winData.winner==='O';
+    if(winData.winner==='X'){scores.x++;document.getElementById('xWins').textContent=scores.x;res.innerHTML='<span class="res-win">🎉 X WINS!</span>';}
+    else{scores.o++;document.getElementById('oWins').textContent=scores.o;res.innerHTML=`<span class="${gameMode!=='2p'?'res-lose':'res-win'}">${isAI?'🤖 AI WINS!':'🎉 O WINS!'}</span>`;}
+  } else {scores.draw++;document.getElementById('draws').textContent=scores.draw;res.innerHTML='<span class="res-draw">🤝 DRAW!</span>';}
+  setTurnBar();
+}
+newGame();
+</script>
+</body>
+</html>

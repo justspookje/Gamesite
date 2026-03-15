@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROCK PAPER SCISSORS</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#05050f;--surface:#0d0d1a;--cyan:#00ffff;--pink:#ff00cc;--yellow:#ffee00;--green:#00ff88;--red:#ff3355;--text:#d0d0ff;--dim:#44446a}
+body{background:var(--bg);font-family:'Press Start 2P',monospace;color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;gap:1rem;background:var(--surface);border-bottom:2px solid #1a1a35}
+nav a{color:var(--cyan);text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav a:hover{text-shadow:0 0 10px var(--cyan)}
+nav h1{font-size:.7rem;color:#fff;margin-left:auto;margin-right:auto;padding-right:4rem}
+.game{display:flex;flex-direction:column;align-items:center;padding:2rem;gap:2rem;width:100%;max-width:700px}
+.scoreboard{display:flex;gap:3rem;align-items:center;background:var(--surface);border:2px solid #1a1a35;padding:1.5rem 3rem;border-radius:4px}
+.score-item{text-align:center}
+.score-label{font-size:.4rem;color:var(--dim);margin-bottom:.5rem}
+.score-num{font-size:2.5rem}
+.score-you .score-num{color:var(--cyan)}
+.score-cpu .score-num{color:var(--pink)}
+.score-tie .score-num{color:var(--yellow)}
+.vs-text{font-size:.6rem;color:var(--dim)}
+.mode-select{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.mode-btn{background:transparent;border:2px solid var(--dim);color:var(--dim);font-family:'Press Start 2P',monospace;font-size:.45rem;padding:.5rem 1rem;cursor:pointer;transition:.2s;letter-spacing:.05em;border-radius:2px}
+.mode-btn.active{border-color:var(--yellow);color:var(--yellow);box-shadow:0 0 10px rgba(255,238,0,.3)}
+.arena{display:flex;align-items:center;gap:3rem;padding:1rem}
+.hand{font-size:5rem;line-height:1;min-width:100px;text-align:center;transition:all .3s;filter:grayscale(1);user-select:none}
+.hand.active{filter:none;animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateY(0)}25%{transform:translateY(-10px)}75%{transform:translateY(10px)}}
+.vs-big{font-size:1.5rem;color:var(--dim)}
+.choices{display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center}
+.choice-btn{background:var(--surface);border:3px solid #1a1a35;color:var(--text);font-family:'Press Start 2P',monospace;font-size:.5rem;padding:1.5rem 1rem;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.8rem;border-radius:4px;min-width:120px}
+.choice-btn .emoji{font-size:2.8rem;transition:.2s}
+.choice-btn:hover{border-color:var(--cyan);transform:scale(1.08);box-shadow:0 0 20px rgba(0,255,255,.2)}
+.choice-btn:hover .emoji{transform:scale(1.15)}
+.choice-btn:active{transform:scale(.95)}
+.result-box{min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:1.5rem 2rem;border-radius:4px;background:var(--surface);border:2px solid #1a1a35;width:100%;text-align:center}
+.result-text{font-size:1.2rem}
+.result-win{color:var(--green);text-shadow:0 0 15px var(--green)}
+.result-lose{color:var(--red);text-shadow:0 0 15px var(--red)}
+.result-tie{color:var(--yellow);text-shadow:0 0 15px var(--yellow)}
+.result-sub{font-size:.4rem;color:var(--dim);margin-top:.3rem}
+.progress{display:flex;gap:.4rem;align-items:center}
+.pip{width:14px;height:14px;border:2px solid var(--dim);border-radius:2px}
+.pip.you{background:var(--cyan);border-color:var(--cyan)}
+.pip.cpu{background:var(--pink);border-color:var(--pink)}
+.pip.tie-pip{background:var(--yellow);border-color:var(--yellow)}
+.reset-btn{background:transparent;border:2px solid var(--pink);color:var(--pink);font-family:'Press Start 2P',monospace;font-size:.45rem;padding:.6rem 1.5rem;cursor:pointer;letter-spacing:.1em;transition:.2s;border-radius:2px}
+.reset-btn:hover{background:var(--pink);color:#000;box-shadow:0 0 15px var(--pink)}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>✊ ROCK PAPER SCISSORS</h1>
+</nav>
+<div class="game">
+  <div class="scoreboard">
+    <div class="score-item score-you"><div class="score-label">YOU</div><div class="score-num" id="sYou">0</div></div>
+    <div class="vs-text">VS</div>
+    <div class="score-item score-cpu"><div class="score-label">CPU</div><div class="score-num" id="sCpu">0</div></div>
+    <div class="vs-text">TIE</div>
+    <div class="score-item score-tie"><div class="score-num" id="sTie">0</div></div>
+  </div>
+  <div class="mode-select">
+    <span style="font-size:.4rem;color:var(--dim);align-self:center">MODE:</span>
+    <button class="mode-btn active" onclick="setMode(3,this)">BEST OF 3</button>
+    <button class="mode-btn" onclick="setMode(5,this)">BEST OF 5</button>
+    <button class="mode-btn" onclick="setMode(10,this)">BEST OF 10</button>
+    <button class="mode-btn" onclick="setMode(999,this)">ENDLESS</button>
+  </div>
+  <div class="arena">
+    <div class="hand" id="playerHand">✊</div>
+    <div class="vs-big">VS</div>
+    <div class="hand" id="cpuHand">✊</div>
+  </div>
+  <div class="progress" id="progress"></div>
+  <div class="choices">
+    <button class="choice-btn" onclick="play('rock')"><span class="emoji">✊</span>ROCK</button>
+    <button class="choice-btn" onclick="play('paper')"><span class="emoji">🖐️</span>PAPER</button>
+    <button class="choice-btn" onclick="play('scissors')"><span class="emoji">✌️</span>SCISSORS</button>
+  </div>
+  <div class="result-box">
+    <div class="result-text" id="resultText" style="color:var(--dim);font-size:.7rem">CHOOSE YOUR MOVE!</div>
+    <div class="result-sub" id="resultSub">Pick rock, paper, or scissors to begin</div>
+  </div>
+  <button class="reset-btn" onclick="resetGame()">↺ RESET GAME</button>
+</div>
+<script>
+const emojis={rock:'✊',paper:'🖐️',scissors:'✌️'};
+const choices=['rock','paper','scissors'];
+let scores={you:0,cpu:0,tie:0},mode=3,round=0,gameOver=false;
+function setMode(m,btn){
+  mode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');resetGame();
+}
+function resetGame(){scores={you:0,cpu:0,tie:0};round=0;gameOver=false;
+  document.getElementById('sYou').textContent='0';
+  document.getElementById('sCpu').textContent='0';
+  document.getElementById('sTie').textContent='0';
+  document.getElementById('playerHand').textContent='✊';
+  document.getElementById('playerHand').classList.remove('active');
+  document.getElementById('cpuHand').textContent='✊';
+  document.getElementById('cpuHand').classList.remove('active');
+  document.getElementById('resultText').textContent='CHOOSE YOUR MOVE!';
+  document.getElementById('resultText').className='result-text';
+  document.getElementById('resultText').style.color='var(--dim)';
+  document.getElementById('resultText').style.fontSize='.7rem';
+  document.getElementById('resultSub').textContent='Pick rock, paper, or scissors to begin';
+  updateProgress();
+}
+function play(choice){
+  if(gameOver)return;
+  const cpu=choices[Math.floor(Math.random()*3)];
+  const ph=document.getElementById('playerHand');
+  const ch=document.getElementById('cpuHand');
+  ph.textContent='✊';ch.textContent='✊';
+  ph.classList.remove('active');ch.classList.remove('active');
+  setTimeout(()=>{
+    ph.textContent=emojis[choice];ch.textContent=emojis[cpu];
+    ph.classList.add('active');ch.classList.add('active');
+    const rt=document.getElementById('resultText');
+    const rs=document.getElementById('resultSub');
+    let winner;
+    if(choice===cpu){winner='tie';scores.tie++;rt.textContent='🤝 TIE!';rt.className='result-text result-tie';rs.textContent=`Both chose ${choice.toUpperCase()}`}
+    else if((choice==='rock'&&cpu==='scissors')||(choice==='paper'&&cpu==='rock')||(choice==='scissors'&&cpu==='paper')){
+      winner='you';scores.you++;rt.textContent='🎉 YOU WIN!';rt.className='result-text result-win';rs.textContent=`${choice.toUpperCase()} beats ${cpu.toUpperCase()}`}
+    else{winner='cpu';scores.cpu++;rt.textContent='💀 CPU WINS!';rt.className='result-text result-lose';rs.textContent=`${cpu.toUpperCase()} beats ${choice.toUpperCase()}`}
+    document.getElementById('sYou').textContent=scores.you;
+    document.getElementById('sCpu').textContent=scores.cpu;
+    document.getElementById('sTie').textContent=scores.tie;
+    round++;
+    const needed=Math.ceil(mode/2);
+    if(mode!==999&&(scores.you>=needed||scores.cpu>=needed||round>=mode)){
+      gameOver=true;
+      setTimeout(()=>{
+        if(scores.you>scores.cpu){rt.textContent='🏆 YOU WIN THE MATCH!';rt.className='result-text result-win'}
+        else if(scores.cpu>scores.you){rt.textContent='💀 CPU WINS THE MATCH!';rt.className='result-text result-lose'}
+        else{rt.textContent='🤝 MATCH IS A TIE!';rt.className='result-text result-tie'}
+        rs.textContent='Click RESET to play again';
+      },1200);
+    }
+    updateProgress();
+  },300);
+}
+function updateProgress(){
+  const p=document.getElementById('progress');
+  if(mode===999){p.innerHTML='';return;}
+  let html='';
+  for(let i=0;i<mode;i++){
+    if(i<scores.you) html+=`<div class="pip you" title="You won"></div>`;
+    else if(i<scores.you+scores.cpu) html+=`<div class="pip cpu" title="CPU won"></div>`;
+    else if(i<scores.you+scores.cpu+scores.tie) html+=`<div class="pip tie-pip" title="Tie"></div>`;
+    else html+=`<div class="pip"></div>`;
+  }
+  p.innerHTML=html;
+}
+updateProgress();
+</script>
+</body>
+</html>

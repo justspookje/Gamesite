@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BREAKOUT</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#05050f;font-family:'Press Start 2P',monospace;color:#d0d0ff;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+nav{width:100%;padding:1rem 2rem;display:flex;align-items:center;background:#0d0d1a;border-bottom:2px solid #1a1a35}
+nav a{color:#00ffff;text-decoration:none;font-size:.5rem;letter-spacing:.1em}
+nav h1{font-size:.7rem;color:#fff;margin:0 auto;padding-right:4rem}
+.game{display:flex;flex-direction:column;align-items:center;padding:1.5rem;gap:1rem;width:100%}
+.hud{display:flex;gap:2rem;background:#0d0d1a;border:2px solid #1a1a35;padding:.7rem 1.5rem;border-radius:4px;flex-wrap:wrap;justify-content:center}
+.hud-item{text-align:center}.hud-label{font-size:.35rem;color:#44446a;margin-bottom:.3rem}.hud-val{font-size:.8rem}
+canvas{border:2px solid #1a1a35;border-radius:4px;display:block;cursor:none;touch-action:none}
+.hint{font-size:.38rem;color:#44446a;text-align:center}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<nav>
+  <a href="index.html">← ARCADE</a>
+  <h1>🧱 BREAKOUT</h1>
+</nav>
+<div class="game">
+  <div class="hud">
+    <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="score" style="color:#00ffff">0</div></div>
+    <div class="hud-item"><div class="hud-label">BEST</div><div class="hud-val" id="best" style="color:#ffee00">0</div></div>
+    <div class="hud-item"><div class="hud-label">LEVEL</div><div class="hud-val" id="level" style="color:#00ff88">1</div></div>
+    <div class="hud-item"><div class="hud-label">LIVES</div><div class="hud-val" id="lives" style="color:#ff3355">❤️❤️❤️</div></div>
+  </div>
+  <canvas id="breakout" width="480" height="480"></canvas>
+  <div class="hint">MOUSE / TOUCH to move paddle • CLICK / TAP to launch ball</div>
+</div>
+<script>
+const canvas=document.getElementById('breakout');
+const ctx=canvas.getContext('2d');
+const W=480,H=480;
+const PW=80,PH=12,PR=8; // paddle width/height, ball radius
+const BRICK_ROWS=5,BRICK_COLS=8,BW=52,BH=18,BPAD=4,BOFF_X=12,BOFF_Y=50;
+const COLORS=['#ff3355','#ff6600','#ffee00','#00ff88','#00ccff','#aa88ff'];
+const POINTS=[60,50,40,30,20,10];
+let px,bx,by,bvx,bvy,bricks,score,best=0,lives,level,gameState,ballSpeed;
+function init(){
+  px=W/2-PW/2;score=0;lives=3;level=1;gameState='idle';
+  resetBall();buildBricks();updateHUD();
+}
+function resetBall(){bx=px+PW/2;by=H-PH-PR-5;bvx=0;bvy=0;gameState=gameState==='over'?'over':'idle';}
+function buildBricks(){
+  bricks=[];
+  for(let r=0;r<BRICK_ROWS;r++)for(let c=0;c<BRICK_COLS;c++){
+    let hp=BRICK_ROWS-r;if(level>=3&&r<2)hp=2;if(level>=5&&r<2)hp=3;
+    bricks.push({x:BOFF_X+c*(BW+BPAD),y:BOFF_Y+r*(BH+BPAD),hp,maxHp:hp,alive:true,row:r});}
+}
+function updateHUD(){
+  document.getElementById('score').textContent=score;document.getElementById('best').textContent=best;
+  document.getElementById('level').textContent=level;document.getElementById('lives').textContent='❤️'.repeat(lives)+'🖤'.repeat(Math.max(0,3-lives));
+}
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();px=Math.max(0,Math.min(W-PW,(e.clientX-r.left)*(W/r.width)-PW/2));if(gameState==='idle')bx=px+PW/2;});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();px=Math.max(0,Math.min(W-PW,(e.touches[0].clientX-r.left)*(W/r.width)-PW/2));if(gameState==='idle')bx=px+PW/2;},{passive:false});
+canvas.addEventListener('click',launch);canvas.addEventListener('touchend',e=>{e.preventDefault();launch();},{passive:false});
+function launch(){
+  if(gameState==='idle'){const spd=4+level*.5;const ang=-(Math.PI/4+Math.random()*Math.PI/2);bvx=spd*Math.cos(ang);bvy=spd*Math.sin(ang);gameState='running';}
+  else if(gameState==='over'){init();}
+}
+function tick(){
+  if(gameState!=='running')return;
+  bx+=bvx;by+=bvy;
+  // Wall bounce
+  if(bx-PR<0){bx=PR;bvx=Math.abs(bvx);}if(bx+PR>W){bx=W-PR;bvx=-Math.abs(bvx);}
+  if(by-PR<0){by=PR;bvy=Math.abs(bvy);}
+  // Bottom
+  if(by+PR>H){loseLife();return;}
+  // Paddle
+  if(by+PR>H-PH-5&&by+PR<H&&bx>px&&bx<px+PW&&bvy>0){
+    bvy=-Math.abs(bvy);const rel=(bx-(px+PW/2))/(PW/2);bvx=rel*6;by=H-PH-5-PR;}
+  // Bricks
+  for(const brick of bricks){
+    if(!brick.alive)continue;
+    const {x,y}=brick;
+    if(bx+PR>x&&bx-PR<x+BW&&by+PR>y&&by-PR<y+BH){
+      const overlapL=bx+PR-x,overlapR=x+BW-(bx-PR),overlapT=by+PR-y,overlapB=y+BH-(by-PR);
+      const minH=Math.min(overlapL,overlapR),minV=Math.min(overlapT,overlapB);
+      if(minH<minV){bvx*=-1;}else{bvy*=-1;}
+      brick.hp--;
+      if(brick.hp<=0){brick.alive=false;const pts=POINTS[Math.min(brick.row,5)]*level;score+=pts;if(score>best)best=score;}
+      updateHUD();break;
+    }
+  }
+  // Level complete
+  if(bricks.every(b=>!b.alive)){level++;buildBricks();resetBall();updateHUD();gameState='idle';}
+}
+function loseLife(){lives--;updateHUD();if(lives<=0){gameState='over';best=Math.max(best,score);}else{resetBall();gameState='idle';}}
+function draw(){
+  ctx.fillStyle='#05050f';ctx.fillRect(0,0,W,H);
+  // Bricks
+  bricks.forEach(b=>{
+    if(!b.alive)return;
+    const ci=Math.min(b.row,COLORS.length-1);const c=COLORS[ci];
+    const dimFactor=b.hp/b.maxHp;
+    ctx.globalAlpha=.3+dimFactor*.7;ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=dimFactor>0.5?8:0;
+    ctx.beginPath();ctx.roundRect(b.x,b.y,BW,BH,3);ctx.fill();
+    ctx.globalAlpha=1;ctx.shadowBlur=0;
+    if(b.hp>1){ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='.38rem Press Start 2P,monospace';ctx.textAlign='center';ctx.fillText(b.hp,b.x+BW/2,b.y+BH/2+5);}
+  });
+  // Paddle
+  const pg=ctx.createLinearGradient(px,H-PH-5,px+PW,H-5);pg.addColorStop(0,'#00ffff');pg.addColorStop(1,'#0088ff');
+  ctx.fillStyle=pg;ctx.shadowColor='#00ffff';ctx.shadowBlur=12;
+  ctx.beginPath();ctx.roundRect(px,H-PH-5,PW,PH,4);ctx.fill();ctx.shadowBlur=0;
+  // Ball
+  ctx.fillStyle='#fff';ctx.shadowColor='#fff';ctx.shadowBlur=15;
+  ctx.beginPath();ctx.arc(bx,by,PR,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  // Overlays
+  ctx.textAlign='center';
+  if(gameState==='idle'){
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,H/2-50,W,100);
+    ctx.fillStyle='#ffee00';ctx.font='.5rem Press Start 2P,monospace';
+    ctx.fillText(level===1?'BREAKOUT!':'LEVEL '+level+' CLEAR!',W/2,H/2-10);
+    const t=Math.floor(Date.now()/600)%2;if(t)ctx.fillStyle='#fff';else ctx.fillStyle='#888';
+    ctx.font='.38rem Press Start 2P,monospace';ctx.fillText('CLICK / TAP TO LAUNCH',W/2,H/2+25);
+  }
+  if(gameState==='over'){
+    ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(0,H/2-70,W,140);
+    ctx.fillStyle='#ff3355';ctx.font='.7rem Press Start 2P,monospace';ctx.fillText('GAME OVER',W/2,H/2-25);
+    ctx.fillStyle='#fff';ctx.font='.45rem Press Start 2P,monospace';ctx.fillText('SCORE: '+score,W/2,H/2+15);
+    if(score>=best&&score>0){ctx.fillStyle='#ffee00';ctx.fillText('HIGH SCORE!',W/2,H/2+45);}
+    ctx.fillStyle='#888';ctx.font='.38rem Press Start 2P,monospace';ctx.fillText('CLICK TO RETRY',W/2,H/2+75);
+  }
+}
+function loop(){requestAnimationFrame(loop);tick();draw();}
+init();loop();
+</script>
+</body>
+</html>
