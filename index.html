@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIXEL ARCADE</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05050f;--surface:#0d0d20;--border:#1a1a35;
+  --cyan:#00ffff;--pink:#ff00cc;--yellow:#ffee00;
+  --green:#00ff88;--orange:#ff6600;--text:#d0d0ff;--dim:#44446a;
+}
+body{background:var(--bg);font-family:'Press Start 2P',monospace;color:var(--text);min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:2rem}
+header{text-align:center;padding:3rem 1rem 2rem;position:relative}
+.logo{font-size:clamp(1.5rem,5vw,3.5rem);letter-spacing:.2em;
+  background:linear-gradient(135deg,var(--cyan),var(--pink),var(--yellow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:flicker 4s infinite,glow-text 2s ease-in-out infinite alternate}
+@keyframes flicker{0%,95%,100%{opacity:1}96%{opacity:.8}97%{opacity:1}98%{opacity:.6}99%{opacity:1}}
+@keyframes glow-text{from{filter:drop-shadow(0 0 8px var(--cyan))}to{filter:drop-shadow(0 0 20px var(--pink))}}
+.subtitle{color:var(--dim);font-size:.5rem;letter-spacing:.3em;margin-top:.8rem;animation:blink 1.5s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.insert-coin{display:inline-block;border:2px solid var(--yellow);color:var(--yellow);
+  padding:.5rem 1.5rem;font-size:.5rem;margin-top:1rem;letter-spacing:.2em;
+  animation:pulse-border 2s ease-in-out infinite}
+@keyframes pulse-border{0%,100%{box-shadow:0 0 5px var(--yellow)}50%{box-shadow:0 0 20px var(--yellow),inset 0 0 10px rgba(255,238,0,.1)}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem;padding:2rem 0}
+.card{background:var(--surface);border:2px solid var(--border);border-radius:4px;
+  padding:2rem 1.5rem;text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;align-items:center;gap:1rem;
+  transition:all .2s;position:relative;overflow:hidden;cursor:pointer}
+.card::before{content:'';position:absolute;inset:0;opacity:0;transition:.3s;
+  background:linear-gradient(135deg,rgba(0,255,255,.05),rgba(255,0,204,.05))}
+.card:hover{transform:translateY(-4px) scale(1.02);border-color:var(--accent)}
+.card:hover::before{opacity:1}
+.card:hover .card-icon{transform:scale(1.2);filter:drop-shadow(0 0 12px var(--accent))}
+.card-icon{font-size:3rem;transition:.3s;line-height:1}
+.card-title{font-size:.7rem;letter-spacing:.1em;color:#fff;text-align:center}
+.card-desc{font-size:.4rem;color:var(--dim);text-align:center;line-height:1.8}
+.card-badge{position:absolute;top:.5rem;right:.5rem;font-size:.35rem;
+  padding:.2rem .4rem;border-radius:2px}
+.badge-hot{background:var(--orange);color:#000}
+.badge-new{background:var(--green);color:#000}
+.badge-classic{background:var(--pink);color:#000}
+/* Accent colors per card */
+.c1{--accent:var(--cyan)}
+.c2{--accent:var(--pink)}
+.c3{--accent:var(--yellow)}
+.c4{--accent:var(--green)}
+.c5{--accent:var(--orange)}
+.c6{--accent:#aa88ff}
+.c7{--accent:#ff4488}
+.c8{--accent:#00ddff}
+.c9{--accent:#ffaa00}
+.c10{--accent:#88ff44}
+.c11{--accent:#ff8800}
+footer{text-align:center;padding:3rem 0 2rem;color:var(--dim);font-size:.4rem;line-height:2.5}
+.scanlines{position:fixed;inset:0;z-index:999;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px)}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<canvas id="stars"></canvas>
+<div class="wrap">
+<header>
+  <div class="logo">PIXEL ARCADE</div>
+  <div class="subtitle">SELECT YOUR GAME</div>
+  <div class="insert-coin">▶ INSERT COIN TO PLAY ◀</div>
+</header>
+<div class="grid">
+  <a href="rps.html" class="card c1">
+    <span class="badge-hot badge-classic badge">CLASSIC</span>
+    <div class="card-icon">✊</div>
+    <div class="card-title">ROCK PAPER<br>SCISSORS</div>
+    <div class="card-desc">Battle the machine<br>Best of 5 or 10 rounds</div>
+  </a>
+  <a href="hangman.html" class="card c2">
+    <span class="badge-hot badge">HOT</span>
+    <div class="card-icon">🪢</div>
+    <div class="card-title">HANGMAN</div>
+    <div class="card-desc">Guess the word<br>Before it's too late</div>
+  </a>
+  <a href="trivia.html" class="card c3">
+    <span class="badge-new badge">NEW</span>
+    <div class="card-icon">🧠</div>
+    <div class="card-title">TRIVIA BLAST</div>
+    <div class="card-desc">Test your knowledge<br>50+ questions, 5 categories</div>
+  </a>
+  <a href="pong.html" class="card c4">
+    <span class="badge-classic badge">1978</span>
+    <div class="card-icon">🏓</div>
+    <div class="card-title">PONG</div>
+    <div class="card-desc">The original classic<br>1 or 2 player mode</div>
+  </a>
+  <a href="chess.html" class="card c5">
+    <div class="card-icon">♟️</div>
+    <div class="card-title">CHESS</div>
+    <div class="card-desc">Full chess engine<br>2 player battle</div>
+  </a>
+  <a href="golf.html" class="card c6">
+    <span class="badge-new badge">NEW</span>
+    <div class="card-icon">⛳</div>
+    <div class="card-title">MINI GOLF</div>
+    <div class="card-desc">6 unique holes<br>Aim, power, putt!</div>
+  </a>
+  <a href="snake.html" class="card c7">
+    <span class="badge-classic badge">CLASSIC</span>
+    <div class="card-icon">🐍</div>
+    <div class="card-title">SNAKE</div>
+    <div class="card-desc">Eat, grow, survive<br>How long can you last?</div>
+  </a>
+  <a href="memory.html" class="card c8">
+    <div class="card-icon">🃏</div>
+    <div class="card-title">MEMORY MATCH</div>
+    <div class="card-desc">Flip cards, find pairs<br>Beat your best time!</div>
+  </a>
+  <a href="tictactoe.html" class="card c9">
+    <div class="card-icon">❎</div>
+    <div class="card-title">TIC TAC TOE</div>
+    <div class="card-desc">vs smart AI<br>Try to beat it!</div>
+  </a>
+  <a href="breakout.html" class="card c10">
+    <span class="badge-hot badge">HOT</span>
+    <div class="card-icon">🧱</div>
+    <div class="card-title">BREAKOUT</div>
+    <div class="card-desc">Smash all the bricks<br>Multi-level madness</div>
+  </a>
+  <a href="wordle.html" class="card c11">
+    <span class="badge-new badge">NEW</span>
+    <div class="card-icon">🔤</div>
+    <div class="card-title">WORD GUESS</div>
+    <div class="card-desc">5-letter word puzzle<br>6 attempts, unlimited plays</div>
+  </a>
+  <a href="flappy.html" class="card c1">
+    <span class="badge-hot badge">HOT</span>
+    <div class="card-icon">🐦</div>
+    <div class="card-title">FLAPPY BIRD</div>
+    <div class="card-desc">Tap to flap, dodge pipes<br>How far can you go?</div>
+  </a>
+</div>
+<footer>
+  PIXEL ARCADE &copy; 2025 &nbsp;|&nbsp; MADE WITH ❤️ FOR GITHUB PAGES<br>
+  ALL GAMES PLAY IN BROWSER &nbsp;|&nbsp; NO INSTALL NEEDED<br>
+  <small style="color:#2a2a4a">PRESS F11 FOR BEST EXPERIENCE</small>
+</footer>
+</div>
+<script>
+const canvas=document.getElementById('stars');
+const ctx=canvas.getContext('2d');
+let stars=[];
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;stars=Array.from({length:200},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.5+.3,s:Math.random()*.3+.05,b:Math.random()}))}
+function drawStars(){ctx.clearRect(0,0,canvas.width,canvas.height);stars.forEach(s=>{s.b+=s.s;if(s.b>1||s.b<0)s.s*=-1;ctx.globalAlpha=s.b*.7+.1;ctx.fillStyle='#aaccff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;requestAnimationFrame(drawStars)}
+resize();window.addEventListener('resize',resize);drawStars();
+</script>
+</body>
+</html>
